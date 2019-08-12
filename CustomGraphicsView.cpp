@@ -39,14 +39,31 @@ void CustomGraphicsView::setMainWidget(QWidget *pWidget)
         this->setWindowFlags(pWidget->windowFlags());
         QGraphicsProxyWidget *pProxyWidget = scene()->addWidget(pWidget,pWidget->windowFlags());
         connect(pProxyWidget,&QGraphicsProxyWidget::geometryChanged,this,&CustomGraphicsView::slotGeometryChanged);
+        pProxyWidget->setWindowFlags(pWidget->windowFlags());
 
         connect(pProxyWidget,&QGraphicsProxyWidget::visibleChanged,this,[this,pWidget]{
-            if(pWidget->windowState()== (Qt::WindowMinimized|Qt::WindowFullScreen))
+            if(pWidget->windowState().testFlag(Qt::WindowMinimized))
             {
                 this->showMinimized();
                 return;
             }
             setVisible(pWidget->isVisible());
+        });
+
+        connect(pProxyWidget, &QGraphicsProxyWidget::childrenChanged,this, [pProxyWidget]{
+            qDebug()<<__FUNCTION__<<pProxyWidget->childItems().count();
+            for(auto objItem : pProxyWidget->childItems())
+            {
+                QGraphicsWidget *pGraphicsWidget = qobject_cast<QGraphicsWidget *>(objItem->toGraphicsObject());
+                if(pGraphicsWidget)
+                {
+                    if(!pGraphicsWidget->windowFlags().testFlag(Qt::FramelessWindowHint))
+                    {
+                        qDebug()<<__FUNCTION__<<"pGraphicsWidget->setWindowFlags";
+                        pGraphicsWidget->setWindowFlags(pGraphicsWidget->windowFlags()|Qt::FramelessWindowHint);
+                    }
+                }
+            }
         });
     }
 }
